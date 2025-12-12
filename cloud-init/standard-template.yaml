@@ -1,0 +1,75 @@
+#cloud-config
+# Standard cloud-init template for Debian/Ubuntu servers
+# Replace <YOUR_SSH_PUBLIC_KEY> with your actual SSH public key(s)
+#
+# Features:
+# - Secure SSH configuration (key-only auth, no root login)
+# - Dynamic swap based on RAM
+# - SSD/NVMe optimizations
+# - Automatic security updates
+# - Weekly maintenance reboot
+#
+# Usage: https://cloudinit.readthedocs.io/
+
+users:
+  - name: <YOUR_USERNAME>
+    ssh_authorized_keys:
+      - "<YOUR_SSH_PUBLIC_KEY>"
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    lock_passwd: true
+  - name: root
+    lock_passwd: true
+
+runcmd:
+  # SSH Hardening
+  - sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
+  - echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+  - sed -i '/PubkeyAuthentication/d' /etc/ssh/sshd_config
+  - echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+  - sed -i '/PasswordAuthentication/d' /etc/ssh/sshd_config
+  - echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+  - sed -i '/StrictModes/d' /etc/ssh/sshd_config
+  - echo "StrictModes yes" >> /etc/ssh/sshd_config
+  - systemctl restart sshd
+
+  # Disable needrestart prompts
+  - echo "\$nrconf{kernelhints} = -1;" > /etc/needrestart/conf.d/99disable-prompt.conf
+
+  # System updates
+  - apt update
+  - apt upgrade -y --allow-downgrades --allow-change-held-packages
+  - apt install unattended-upgrades -y
+  - dpkg-reconfigure -f noninteractive unattended-upgrades
+
+  # Dynamic swap based on RAM
+  - |
+    RAM_MB=$(free -m | awk '/^Mem:/{print $2}')
+    if [ "$RAM_MB" -le 2048 ]; then
+      SWAP_SIZE="${RAM_MB}M"
+    elif [ "$RAM_MB" -le 8192 ]; then
+      SWAP_SIZE="$((RAM_MB / 2))M"
+    else
+      SWAP_SIZE="4G"
+    fi
+    fallocate -l "$SWAP_SIZE" /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    # SSD optimizations
+    echo "vm.swappiness=10" >> /etc/sysctl.conf
+    echo "vm.dirty_ratio=10" >> /etc/sysctl.conf
+    echo "vm.dirty_background_ratio=5" >> /etc/sysctl.conf
+    sysctl -p
+
+  # Add noatime to reduce SSD writes
+  - sed -i 's/\(defaults\)/\1,noatime/' /etc/fstab
+  - sed -i 's/\(errors=remount-ro\)/\1,noatime/' /etc/fstab
+
+  # Weekly maintenance reboot (Sunday 4 AM)
+  - (crontab -l 2>/dev/null; echo "0 4 * * sun /sbin/shutdown -r now") | crontab -
+
+  # Reboot to apply all changes
+  - reboot

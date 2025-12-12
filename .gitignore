@@ -1,0 +1,225 @@
+# =============================================================================
+# Server Configs .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Sensitive Files - NEVER COMMIT THESE
+# -----------------------------------------------------------------------------
+
+# SSH Keys
+*.pem
+*.key
+*.pub
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+*.ppk
+
+# Certificates
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# Secrets and credentials
+*.secret
+*.secrets
+**/secrets/
+.env
+.env.*
+!.env.example
+credentials.json
+credentials.yaml
+credentials.yml
+**/credentials/
+
+# Password files
+*.pass
+*.password
+shadow
+passwd
+
+# API Keys and tokens
+*.token
+api_key*
+apikey*
+
+# -----------------------------------------------------------------------------
+# Personal/Local Configurations
+# -----------------------------------------------------------------------------
+
+# Custom configs with real values
+*-local.yaml
+*-local.yml
+*-local.conf
+*.local
+my-*.yaml
+my-*.yml
+my-*.conf
+
+# Private overrides
+private/
+.private/
+local/
+.local/
+
+# User-specific files
+*.user.yaml
+*.user.yml
+*.user.conf
+
+# -----------------------------------------------------------------------------
+# OS Generated Files
+# -----------------------------------------------------------------------------
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# -----------------------------------------------------------------------------
+# Editor and IDE Files
+# -----------------------------------------------------------------------------
+
+# VSCode
+.vscode/
+!.vscode/settings.json.example
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+.netrwhist
+
+# Emacs
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# -----------------------------------------------------------------------------
+# Logs and Temporary Files
+# -----------------------------------------------------------------------------
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Cache
+.cache/
+*.cache
+
+# -----------------------------------------------------------------------------
+# Build and Output
+# -----------------------------------------------------------------------------
+
+# Build directories
+build/
+dist/
+out/
+output/
+
+# Archives (usually generated)
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# -----------------------------------------------------------------------------
+# Testing and Development
+# -----------------------------------------------------------------------------
+
+# Vagrant
+.vagrant/
+Vagrantfile.local
+
+# Docker (local overrides)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Ansible
+*.retry
+
+# Terraform (if ever used)
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+!*.tfvars.example
+
+# -----------------------------------------------------------------------------
+# Documentation Build
+# -----------------------------------------------------------------------------
+
+# Sphinx documentation
+docs/_build/
+
+# MkDocs
+site/
+
+# -----------------------------------------------------------------------------
+# Misc
+# -----------------------------------------------------------------------------
+
+# Patch files
+*.patch
+*.diff
+
+# Core dumps
+core
+
+# Coverage reports
+coverage/
+*.coverage
+htmlcov/
+
+# Node (if any tooling is added)
+node_modules/
+package-lock.json
+yarn.lock
