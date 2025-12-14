@@ -212,9 +212,9 @@ users:
 
 | Setting | Security Rationale |
 |---------|-------------------|
-| `lock_passwd: true` | Completely disables password authentication for the user. Even if an attacker gains shell access through another vulnerability, they cannot use `su` to switch users with a password. |
+| `lock_passwd: true` | Locks the user's password (equivalent to `passwd -l`), disabling all password-based authentication. This prevents password login via SSH, `su`, or any PAM-authenticated service. Access is only possible via SSH keys. |
 | Non-root user | **Principle of least privilege.** Daily operations don't require root. Sudo provides temporary elevation with full audit logging in `/var/log/auth.log`. |
-| Root `lock_passwd: true` | Ensures root account cannot be accessed directly, even via console. All privileged access must go through sudo. |
+| Root `lock_passwd: true` | Locks root's password, preventing direct root login via password. Combined with `PermitRootLogin no`, this ensures root access only via `sudo` from an authorized user. Note: Physical console access in recovery mode may still be possible depending on bootloader configuration. |
 
 ### Automatic Security Updates
 
