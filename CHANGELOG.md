@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-12-14
+
+### Added
+- GitHub SSH key setup guide for Linux, macOS, and Windows (`docs/git-setup-guide.md`)
+- VS Code Git/SSH integration documentation
+- Comprehensive troubleshooting section for SSH issues
+- Quick reference one-liners for all platforms
+
+## [0.1.0] - 2025-12-14
+
 ### Added
 - Initial repository structure
 - Cloud-init standard template with security hardening
@@ -25,20 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSD/NVMe optimizations
 - Automatic security updates via unattended-upgrades
 
-## [0.1.0] - 2025-01-XX
-
-### Added
-- Initial release
-- Standard cloud-init template for Debian/Ubuntu
-- Basic repository documentation
-
 ---
 
 ## Version History
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 0.1.0 | TBD | Initial release |
+| 0.2.0 | 2025-12-14 | GitHub SSH setup guide |
+| 0.1.0 | 2025-12-14 | Initial release |
 
 ## Versioning
 
