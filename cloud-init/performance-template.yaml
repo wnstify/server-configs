@@ -1,0 +1,183 @@
+#cloud-config
+# =============================================================================
+# Performance-Optimized Cloud-Init Template for Debian/Ubuntu Servers
+# =============================================================================
+#
+# This template is designed for high-traffic web servers, application servers,
+# and databases that require aggressive performance tuning.
+#
+# Replace placeholders before use:
+#   <YOUR_USERNAME>        - Your desired username
+#   <YOUR_SSH_PUBLIC_KEY>  - Your SSH public key(s)
+#
+# Features:
+#   - Secure SSH configuration (key-only auth, no root login)
+#   - Dynamic swap based on RAM
+#   - TCP BBR congestion control for better throughput
+#   - Network buffer tuning for high-concurrency workloads
+#   - Increased file descriptor limits
+#   - SSD/NVMe optimizations
+#   - Automatic security updates
+#   - Weekly maintenance reboot
+#
+# Best suited for:
+#   - Web servers (Nginx, Apache)
+#   - Application servers (Node.js, Python, Go)
+#   - Database servers (PostgreSQL, MySQL, Redis)
+#   - Load balancers and reverse proxies
+#
+# Usage: https://cloudinit.readthedocs.io/
+# =============================================================================
+
+users:
+  - name: <YOUR_USERNAME>
+    ssh_authorized_keys:
+      - "<YOUR_SSH_PUBLIC_KEY>"
+      # Add additional keys as needed:
+      # - "<ANOTHER_SSH_PUBLIC_KEY>"
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    lock_passwd: true
+  - name: root
+    lock_passwd: true
+
+runcmd:
+  # ---------------------------------------------------------------------------
+  # Disable needrestart prompts (prevents interactive prompts during updates)
+  # ---------------------------------------------------------------------------
+  - echo "\$nrconf{kernelhints} = -1;" > /etc/needrestart/conf.d/99disable-prompt.conf
+
+  # ---------------------------------------------------------------------------
+  # System Updates
+  # ---------------------------------------------------------------------------
+  - apt update
+  - apt upgrade -y --allow-downgrades --allow-change-held-packages
+  - apt install unattended-upgrades -y
+  - dpkg-reconfigure -f noninteractive unattended-upgrades
+
+  # ---------------------------------------------------------------------------
+  # SSH Hardening
+  # ---------------------------------------------------------------------------
+  - sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
+  - echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+  - sed -i '/PubkeyAuthentication/d' /etc/ssh/sshd_config
+  - echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+  - sed -i '/PasswordAuthentication/d' /etc/ssh/sshd_config
+  - echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+  - sed -i '/StrictModes/d' /etc/ssh/sshd_config
+  - echo "StrictModes yes" >> /etc/ssh/sshd_config
+  - systemctl restart sshd
+
+  # ---------------------------------------------------------------------------
+  # Dynamic Swap Configuration
+  # Automatically sizes swap based on available RAM
+  # ---------------------------------------------------------------------------
+  - |
+    RAM_MB=$(free -m | awk '/^Mem:/{print $2}')
+    if [ "$RAM_MB" -le 2048 ]; then
+      SWAP_SIZE="${RAM_MB}M"
+    elif [ "$RAM_MB" -le 8192 ]; then
+      SWAP_SIZE="$((RAM_MB / 2))M"
+    else
+      SWAP_SIZE="4G"
+    fi
+    fallocate -l "$SWAP_SIZE" /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+  # ---------------------------------------------------------------------------
+  # Memory & Virtual Memory Tuning
+  # ---------------------------------------------------------------------------
+  # vm.swappiness=10         - Prefer RAM, only swap when necessary
+  # vm.dirty_ratio=10        - Start writing dirty pages at 10% memory
+  # vm.dirty_background_ratio=5 - Background flush at 5% memory
+  # vm.vfs_cache_pressure=50 - Balance between inode/dentry cache and pagecache
+  - echo "vm.swappiness=10" >> /etc/sysctl.conf
+  - echo "vm.dirty_ratio=10" >> /etc/sysctl.conf
+  - echo "vm.dirty_background_ratio=5" >> /etc/sysctl.conf
+  - echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf
+
+  # ---------------------------------------------------------------------------
+  # File Descriptor Limits
+  # Required for high-concurrency servers (web servers, databases)
+  # ---------------------------------------------------------------------------
+  # fs.file-max     - Maximum file descriptors system-wide
+  # fs.nr_open      - Maximum file descriptors per process
+  - echo "fs.file-max=2097152" >> /etc/sysctl.conf
+  - echo "fs.nr_open=2097152" >> /etc/sysctl.conf
+
+  # ---------------------------------------------------------------------------
+  # Network Buffer Tuning
+  # Optimizes TCP/IP stack for high-throughput and many connections
+  # ---------------------------------------------------------------------------
+  # Core buffer sizes (bytes)
+  - echo "net.core.rmem_max=16777216" >> /etc/sysctl.conf
+  - echo "net.core.wmem_max=16777216" >> /etc/sysctl.conf
+  # TCP buffer sizes: min, default, max (bytes)
+  - echo "net.ipv4.tcp_rmem=4096 87380 16777216" >> /etc/sysctl.conf
+  - echo "net.ipv4.tcp_wmem=4096 65536 16777216" >> /etc/sysctl.conf
+  # Connection backlog settings
+  - echo "net.core.somaxconn=65535" >> /etc/sysctl.conf
+  - echo "net.core.netdev_max_backlog=65535" >> /etc/sysctl.conf
+  - echo "net.ipv4.tcp_max_syn_backlog=65535" >> /etc/sysctl.conf
+
+  # ---------------------------------------------------------------------------
+  # TCP Keepalive Settings
+  # Detect dead connections faster
+  # ---------------------------------------------------------------------------
+  - echo "net.ipv4.tcp_keepalive_time=600" >> /etc/sysctl.conf
+  - echo "net.ipv4.tcp_keepalive_intvl=60" >> /etc/sysctl.conf
+  - echo "net.ipv4.tcp_keepalive_probes=3" >> /etc/sysctl.conf
+
+  # ---------------------------------------------------------------------------
+  # TCP BBR Congestion Control
+  # Google's BBR algorithm provides better throughput and lower latency
+  # ---------------------------------------------------------------------------
+  - echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
+  - echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
+
+  # ---------------------------------------------------------------------------
+  # Network Security Hardening
+  # ---------------------------------------------------------------------------
+  - echo "net.ipv4.conf.all.accept_source_route=0" >> /etc/sysctl.conf
+  - echo "net.ipv4.conf.all.accept_redirects=0" >> /etc/sysctl.conf
+  - echo "net.ipv4.tcp_syncookies=1" >> /etc/sysctl.conf
+
+  # ---------------------------------------------------------------------------
+  # Process File Limits (ulimits)
+  # Allows processes to open many file descriptors
+  # ---------------------------------------------------------------------------
+  - echo "* soft nofile 1048576" >> /etc/security/limits.conf
+  - echo "* hard nofile 1048576" >> /etc/security/limits.conf
+  - echo "root soft nofile 1048576" >> /etc/security/limits.conf
+  - echo "root hard nofile 1048576" >> /etc/security/limits.conf
+
+  # ---------------------------------------------------------------------------
+  # Load TCP BBR Module
+  # ---------------------------------------------------------------------------
+  - modprobe tcp_bbr || true
+  - echo "tcp_bbr" >> /etc/modules-load.d/bbr.conf
+
+  # Apply all sysctl settings
+  - sysctl -p
+
+  # ---------------------------------------------------------------------------
+  # SSD/NVMe Optimizations
+  # Reduces unnecessary disk writes
+  # ---------------------------------------------------------------------------
+  - sed -i 's/\(defaults\)/\1,noatime/' /etc/fstab
+  - sed -i 's/\(errors=remount-ro\)/\1,noatime/' /etc/fstab
+
+  # ---------------------------------------------------------------------------
+  # Weekly Maintenance Reboot (Sunday 4 AM)
+  # Ensures kernel updates are applied and memory is cleared
+  # ---------------------------------------------------------------------------
+  - (crontab -l 2>/dev/null; echo "0 4 * * sun /sbin/shutdown -r now") | crontab -
+
+  # ---------------------------------------------------------------------------
+  # Reboot to apply all changes
+  # ---------------------------------------------------------------------------
+  - reboot

@@ -16,16 +16,44 @@ This directory contains cloud-init configuration templates for automated server 
 
 | File | Description | Use Case |
 |------|-------------|----------|
-| `standard-template.yaml` | Well-commented template with placeholders | Starting point for customization |
-| `standard.yaml` | Balanced security and performance | General purpose servers |
-| `performance.yaml` | Optimized for high-load workloads | Web servers, databases |
-| `minimal.yaml` | Bare essentials only | Containers, ephemeral instances |
+| `standard-template.yaml` | Balanced security and performance | General purpose servers |
+| `performance-template.yaml` | Aggressive performance tuning | High-traffic web/app servers |
+
+## Template Comparison
+
+| Feature | Standard | Performance |
+|---------|----------|-------------|
+| SSH Hardening | Yes | Yes |
+| Automatic Updates | Yes | Yes |
+| Dynamic Swap | Yes | Yes |
+| SSD Optimizations | Yes | Yes |
+| Weekly Reboot | Yes | Yes |
+| TCP BBR | No | Yes |
+| Network Buffer Tuning | No | Yes |
+| File Descriptor Limits | No | Yes |
+| Connection Backlog Tuning | No | Yes |
+| TCP Keepalive Tuning | No | Yes |
+
+### When to Use Each Template
+
+**Standard Template** - Best for:
+- Personal servers and VPS
+- Development environments
+- Low to medium traffic websites
+- When you want minimal system changes
+
+**Performance Template** - Best for:
+- High-traffic web servers (Nginx, Apache)
+- Application servers (Node.js, Python, Go, Java)
+- Database servers (PostgreSQL, MySQL, Redis)
+- Load balancers and reverse proxies
+- Any server handling many concurrent connections
 
 ## Usage
 
 ### 1. Choose a Template
 
-Select the template that best matches your needs.
+Select the template that best matches your workload.
 
 ### 2. Customize
 
@@ -74,9 +102,87 @@ sudo cat /var/log/cloud-init-output.log
 sudo cloud-init analyze show
 ```
 
+## Performance Template Features
+
+### TCP BBR Congestion Control
+
+BBR (Bottleneck Bandwidth and Round-trip propagation time) is Google's congestion control algorithm that significantly improves network throughput, especially on high-latency connections.
+
+```bash
+# Verify BBR is active
+sysctl net.ipv4.tcp_congestion_control
+# Output: net.ipv4.tcp_congestion_control = bbr
+```
+
+**Benefits:**
+- Higher throughput on long-distance connections
+- Better performance on lossy networks
+- Reduced latency under load
+
+### Network Buffer Tuning
+
+The performance template configures larger TCP buffers for high-throughput scenarios:
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `net.core.rmem_max` | 16MB | Max receive buffer |
+| `net.core.wmem_max` | 16MB | Max send buffer |
+| `net.ipv4.tcp_rmem` | 4KB-16MB | TCP receive buffer range |
+| `net.ipv4.tcp_wmem` | 4KB-16MB | TCP send buffer range |
+
+### Connection Backlog
+
+Increased backlog settings prevent connection drops under high load:
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `net.core.somaxconn` | 65535 | Max socket connections queued |
+| `net.core.netdev_max_backlog` | 65535 | Max packets queued |
+| `net.ipv4.tcp_max_syn_backlog` | 65535 | Max SYN requests queued |
+
+### File Descriptor Limits
+
+High-concurrency servers need many open file descriptors:
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `fs.file-max` | 2,097,152 | System-wide max FDs |
+| `fs.nr_open` | 2,097,152 | Per-process max FDs |
+| `nofile` (ulimit) | 1,048,576 | Soft/hard limit for processes |
+
+### TCP Keepalive
+
+Faster detection of dead connections:
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `tcp_keepalive_time` | 600s | Time before sending keepalive |
+| `tcp_keepalive_intvl` | 60s | Interval between probes |
+| `tcp_keepalive_probes` | 3 | Number of probes before dropping |
+
+### Network Security
+
+Both templates include network security hardening:
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `accept_source_route` | 0 | Reject source-routed packets |
+| `accept_redirects` | 0 | Ignore ICMP redirects |
+| `tcp_syncookies` | 1 | SYN flood protection |
+
+## Swap Sizing Logic
+
+Both templates use dynamic swap allocation:
+
+| RAM | Swap Size |
+|-----|-----------|
+| ≤ 2GB | Equal to RAM |
+| 2-8GB | Half of RAM |
+| > 8GB | 4GB (capped) |
+
 ## Creating Custom Templates
 
-Start with `standard-template.yaml` and customize:
+Start with either template and customize:
 
 ```yaml
 #cloud-config
@@ -143,6 +249,26 @@ runcmd:
   - systemctl start nginx
 ```
 
+## Verifying Performance Settings
+
+After deployment, verify the performance settings are active:
+
+```bash
+# Check TCP BBR
+sysctl net.ipv4.tcp_congestion_control
+
+# Check file descriptor limits
+cat /proc/sys/fs/file-max
+ulimit -n
+
+# Check network buffers
+sysctl net.core.rmem_max
+sysctl net.core.wmem_max
+
+# Check connection backlog
+sysctl net.core.somaxconn
+```
+
 ## Debugging
 
 If cloud-init doesn't work as expected:
@@ -164,3 +290,5 @@ sudo cloud-init init
 - [Cloud-init Documentation](https://cloudinit.readthedocs.io/)
 - [Cloud-init Examples](https://cloudinit.readthedocs.io/en/latest/topics/examples.html)
 - [Module Reference](https://cloudinit.readthedocs.io/en/latest/topics/modules.html)
+- [TCP BBR Paper](https://research.google/pubs/pub45646/)
+- [Linux Kernel Sysctl Documentation](https://www.kernel.org/doc/Documentation/sysctl/)

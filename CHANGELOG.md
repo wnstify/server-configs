@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-14
+
+### Added
+- Performance-optimized cloud-init template (`cloud-init/performance-template.yaml`)
+- TCP BBR congestion control for improved network throughput
+- Network buffer tuning for high-traffic servers
+- File descriptor limits configuration (2M system-wide, 1M per process)
+- Connection backlog tuning (65535 for somaxconn, netdev_max_backlog, tcp_max_syn_backlog)
+- TCP keepalive optimization for faster dead connection detection
+- Comprehensive template comparison documentation in cloud-init README
+- Performance verification commands documentation
+
 ## [0.2.0] - 2025-12-14
 
 ### Added
@@ -41,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 0.3.0 | 2025-12-14 | Performance cloud-init template |
 | 0.2.0 | 2025-12-14 | GitHub SSH setup guide |
 | 0.1.0 | 2025-12-14 | Initial release |
 
