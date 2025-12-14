@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-12-14
+
+### Added
+- Comprehensive security documentation explaining all hardening settings
+- SSH security rationale (key-only auth, root login disabled, StrictModes)
+- User account security explanation (lock_passwd, principle of least privilege)
+- Automatic updates documentation (unattended-upgrades benefits)
+- Network security settings explanation (source routing, redirects, syncookies)
+- File system security documentation (swap permissions, noatime)
+- Security verification commands and checklist
+- Security resources section (CIS Benchmarks, Mozilla Guidelines, NIST)
+
 ## [0.3.0] - 2025-12-14
 
 ### Added
@@ -53,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 0.4.0 | 2025-12-14 | Comprehensive security documentation |
 | 0.3.0 | 2025-12-14 | Performance cloud-init template |
 | 0.2.0 | 2025-12-14 | GitHub SSH setup guide |
 | 0.1.0 | 2025-12-14 | Initial release |
